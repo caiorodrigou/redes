@@ -1,111 +1,93 @@
-class IPAddress:
-    def __init__(self, ip_str):
-        if '.' in ip_str:
-            parts = ip_str.split('.')
+class IPToolUI:
+    def __init__(self):
+        self.ip1 = None
+        self.ip2 = None
+        self.mask = None
 
-            if len(parts) != 4:
-                raise ValueError("IP inválido, deve ter 4 octetos")
-            self.octets = []
+    def run(self):
+        print("=== IP Tool Interface ===")
+        while True:
+            print("\nEscolha uma opção:")
+            print("1 - Inserir IP1")
+            print("2 - Inserir IP2")
+            print("3 - Inserir máscara")
+            print("4 - Validar IPs")
+            print("5 - Verificar se IP1 e IP2 estão na mesma rede")
+            print("6 - Mostrar Broadcast da rede do IP1")
+            print("7 - Mostrar Network da rede do IP1")
+            print("0 - Sair")
 
-            for p in parts:
-                v = int(p)
+            choice = input("Opção: ").strip()
 
-                if v < 0 or v > 255:
-                    raise ValueError("Octeto fora do intervalo 0-255")
-                self.octets.append(v)
-            self.bits = ''.join(f'{octet:08b}' for octet in self.octets)
-
-        else:
-            if len(ip_str) != 32 or any(c not in '01' for c in ip_str):
-                raise ValueError("Bits inválidos para IP")
-            
-            self.bits = ip_str
-            self.octets = [int(ip_str[i:i+8], 2) for i in range(0, 32, 8)]
-
-    def toBits(self):
-        return self.bits
-
-    def toIPv4(self):
-        return '.'.join(str(o) for o in self.octets)
-
-    def isMask(self):
-        bits = self.bits
-        first_zero = bits.find('0')
-
-        if first_zero == -1:
-            return True
-        
-        if '1' in bits[first_zero:]:
-            return False
-        return True
-
-    def maskBits(self):
-
-        if not self.isMask():
-            raise ValueError("Não é uma máscara válida")
-        count = 0
-
-        for b in self.bits:
-            if b == '1':
-                count += 1
-            else:
+            if choice == '1':
+                self.ip1 = self._input_ip("Digite IP1 (AAA.BBB.CCC.DDD ou 32 bits): ")
+            elif choice == '2':
+                self.ip2 = self._input_ip("Digite IP2 (AAA.BBB.CCC.DDD ou 32 bits): ")
+            elif choice == '3':
+                self.mask = self._input_ip("Digite máscara (AAA.BBB.CCC.DDD ou 32 bits): ")
+                if self.mask and not self.mask.isMask():
+                    print("Máscara inválida!")
+                    self.mask = None
+            elif choice == '4':
+                self._validate_ips()
+            elif choice == '5':
+                self._check_same_network()
+            elif choice == '6':
+                self._show_broadcast()
+            elif choice == '7':
+                self._show_network()
+            elif choice == '0':
+                print("Saindo...")
                 break
-        return count
+            else:
+                print("Opção inválida!")
 
-
-class IPToolIF:
-
-    @staticmethod
-    def isValid(ip: IPAddress) -> bool:
+    def _input_ip(self, prompt):
+        ip_str = input(prompt).strip()
         try:
-            for o in ip.octets:
-                if o < 0 or o > 255:
-                    return False
-            return True
-        except:
-            return False
+            ip = IPAddress(ip_str)
+            print(f"IP '{ip.toIPv4()}' aceito.")
+            return ip
+        except Exception as e:
+            print(f"Erro ao criar IP: {e}")
+            return None
 
-    @staticmethod
-    def areSameNet(ip1: IPAddress, ip2: IPAddress, mask: IPAddress) -> bool:
-        net1 = IPToolIF._bitwise_and(ip1, mask)
-        net2 = IPToolIF._bitwise_and(ip2, mask)
-        return net1.toBits() == net2.toBits()
+    def _validate_ips(self):
+        if self.ip1:
+            print(f"IP1 ({self.ip1.toIPv4()}) válido? {IPToolIF.isValid(self.ip1)}")
+        else:
+            print("IP1 não definido.")
+        if self.ip2:
+            print(f"IP2 ({self.ip2.toIPv4()}) válido? {IPToolIF.isValid(self.ip2)}")
+        else:
+            print("IP2 não definido.")
+        if self.mask:
+            print(f"Máscara ({self.mask.toIPv4()}) válida? {self.mask.isMask()}")
+        else:
+            print("Máscara não definida.")
 
-    @staticmethod
-    def broadcast(ip: IPAddress, mask: IPAddress) -> IPAddress:
-        net = IPToolIF.network(ip, mask)
-        inv_mask_bits = ''.join('1' if b == '0' else '0' for b in mask.toBits())
-        broadcast_bits = IPToolIF._bitwise_or(net.toBits(), inv_mask_bits)
-        return IPAddress(broadcast_bits)
+    def _check_same_network(self):
+        if not (self.ip1 and self.ip2 and self.mask):
+            print("IP1, IP2 e máscara devem estar definidos.")
+            return
+        same_net = IPToolIF.areSameNet(self.ip1, self.ip2, self.mask)
+        print(f"IP1 e IP2 estão na mesma rede? {'Sim' if same_net else 'Não'}")
 
-    @staticmethod
-    def network(ip: IPAddress, mask: IPAddress) -> IPAddress:
-        net_bits = IPToolIF._bitwise_and(ip, mask).toBits()
-        return IPAddress(net_bits)
+    def _show_broadcast(self):
+        if not (self.ip1 and self.mask):
+            print("IP1 e máscara devem estar definidos.")
+            return
+        broadcast_ip = IPToolIF.broadcast(self.ip1, self.mask)
+        print(f"Broadcast da rede do IP1: {broadcast_ip.toIPv4()}")
 
-    @staticmethod
-    def _bitwise_and(ip: IPAddress, mask: IPAddress) -> IPAddress:
-        bits1 = ip.toBits()
-        bits2 = mask.toBits()
-        result_bits = ''.join('1' if bits1[i] == '1' and bits2[i] == '1' else '0' for i in range(32))
-        return IPAddress(result_bits)
-
-    @staticmethod
-    def _bitwise_or(bits1: str, bits2: str) -> str:
-        return ''.join('1' if bits1[i] == '1' or bits2[i] == '1' else '0' for i in range(32))
-
-
+    def _show_network(self):
+        if not (self.ip1 and self.mask):
+            print("IP1 e máscara devem estar definidos.")
+            return
+        network_ip = IPToolIF.network(self.ip1, self.mask)
+        print(f"Network da rede do IP1: {network_ip.toIPv4()}")
 
 if __name__ == "__main__":
-    ip1 = IPAddress("192.168.1.10")
-    ip2 = IPAddress("192.168.1.20")
-    mask = IPAddress("255.255.255.0")
-
-    print("IP1 bits:", ip1.toBits())
-    print("IP2 bits:", ip2.toBits())
-    print("Mask bits:", mask.toBits())
-    print("Mask é válida?", mask.isMask())
-    print("Bits da máscara:", mask.maskBits())
-    print("IP1 e IP2 mesma rede?", IPToolIF.areSameNet(ip1, ip2, mask))
-    print("Broadcast da rede:", IPToolIF.broadcast(ip1, mask).toIPv4())
-    print("Network da rede:", IPToolIF.network(ip1, mask).toIPv4())
+    ui = IPToolUI()
+    ui.run()
+    
