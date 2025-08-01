@@ -1,6 +1,6 @@
 import socket, ssl, json, psutil, netifaces, time
 
-HOST = '127.0.0.1' # Mude para o IP do seu servidor
+HOST = '127.0.0.1' 
 PORT = 12345
 
 def get_system_info():
