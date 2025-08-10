@@ -20,8 +20,7 @@ def handle_client(conn, addr):
     finally:
         conn.close()
 
-def simple_average(key):
-    """Calcula a média simples de uma métrica de todos os clientes."""
+def media(key):
     if not CLIENTS:
         return 0
     total = sum(d.get(key, 0) for d in CLIENTS.values())
@@ -42,25 +41,14 @@ def console():
                 print(f"\nDetalhes de {ip}:")
                 for k, v in CLIENTS[ip].items():
                     print(f" - {k}: {v}")
-                
-                # --- Adicionado: Exibe a média consolidada ---
-                print("\n--- Média Simples de todos os clientes ---")
-                if CLIENTS:
-                    ram_media = simple_average('ram_free_gb')
-                    cpu_media = simple_average('cpu_count')
-                    print(f"Média de RAM Livre: {ram_media:.2f} GB")
-                    print(f"Média de Processadores: {cpu_media:.2f}")
-                else:
-                    print("Nenhum cliente conectado para calcular a média.")
-                # -----------------------------------------------
             else:
                 print("Cliente não encontrado.")
         elif cmd == 'media':
             if not CLIENTS:
                 print("Nenhum cliente conectado.")
                 continue
-            ram_media = simple_average('ram_free_gb')
-            cpu_media = simple_average('cpu_count')
+            ram_media = media('Memória RAM Livre')
+            cpu_media = media('Quantidade de Processadores')
             print(f"\n- Média de RAM Livre: {ram_media:.2f} GB")
             print(f"- Média de Processadores: {cpu_media:.2f}")
         elif cmd == 'sair':

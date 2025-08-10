@@ -4,7 +4,6 @@ HOST = '127.0.0.1'
 PORT = 12345
 
 def get_system_info():
-    """Coleta e retorna as informações do sistema em um dicionário."""
     info = {
         'Quantidade de Processadores': psutil.cpu_count(logical=True),
         'Memória RAM Livre': round(psutil.virtual_memory().free / (1024 ** 3), 2),
