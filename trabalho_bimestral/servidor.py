@@ -5,8 +5,7 @@ PORT = 12345
 CLIENTS = {}
 LAST_SEEN = {}
 
-def handle_client(conn, addr):
-    """Lida com a conexão de um cliente e salva os dados."""
+def lidar_com_cliente(conn, addr):
     ip, _ = addr
     print(f"Nova conexão de {ip}.")
     try:
@@ -14,7 +13,7 @@ def handle_client(conn, addr):
         if data:
             CLIENTS[ip] = json.loads(data)
             LAST_SEEN[ip] = time.time()
-            print(f"Dados de {ip} recebidos: {CLIENTS[ip]['Memória RAM Livre']} GB de RAM livre.")
+            print(f"Dados de {ip} recebidos: {CLIENTS[ip]['Memória ram']} GB de RAM livre.")
     except Exception as e:
         print(f"Erro com o cliente {ip}: {e}")
     finally:
@@ -26,36 +25,38 @@ def media(key):
     total = sum(d.get(key, 0) for d in CLIENTS.values())
     return total / len(CLIENTS)
 
-def console():
-    """Interface de linha de comando para gerenciar os clientes."""
+def terminal():
     while True:
-        cmd = input("Comandos: 'listar', 'detalhar <ip>', 'media', 'sair' > ")
+        cmd = input("Opcoes: 'listar', 'detalhar <ip>', 'media', 'fechar sistema' > ")
         if cmd == 'listar':
             print("\nClientes ativos:")
             for ip in CLIENTS:
                 last_seen_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(LAST_SEEN.get(ip, 0)))
                 print(f" - IP: {ip} | Último visto: {last_seen_str}")
+                print("")
         elif cmd.startswith('detalhar '):
             ip = cmd.split()[1]
             if ip in CLIENTS:
                 print(f"\nDetalhes de {ip}:")
                 for k, v in CLIENTS[ip].items():
                     print(f" - {k}: {v}")
+                print("")
             else:
                 print("Cliente não encontrado.")
         elif cmd == 'media':
             if not CLIENTS:
                 print("Nenhum cliente conectado.")
                 continue
-            ram_media = media('Memória RAM Livre')
-            cpu_media = media('Quantidade de Processadores')
-            print(f"\n- Média de RAM Livre: {ram_media:.2f} GB")
+            ram_media = media('Memória ram')
+            cpu_media = media('Processadores')
+            print(f"\n- Média de RAM: {ram_media:.2f} GB")
             print(f"- Média de Processadores: {cpu_media:.2f}")
-        elif cmd == 'sair':
+            print("")
+        elif cmd == 'fechar sistema':
             break
 
 def main():
-    threading.Thread(target=console, daemon=True).start()
+    threading.Thread(target=terminal, daemon=True).start()
     
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile="server.pem", keyfile="server.pem")
@@ -63,11 +64,11 @@ def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind((HOST, PORT))
         sock.listen()
-        print("Servidor rodando. Aguardando clientes...")
+        print("Servidor funcionando. Aguardando clientes...")
         while True:
             conn, addr = sock.accept()
             conn = context.wrap_socket(conn, server_side=True)
-            threading.Thread(target=handle_client, args=(conn, addr)).start()
+            threading.Thread(target=lidar_com_cliente, args=(conn, addr)).start()
 
 if __name__ == "__main__":
     main()

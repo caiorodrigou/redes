@@ -3,13 +3,13 @@ import socket, ssl, json, psutil, netifaces, time
 HOST = '127.0.0.1' 
 PORT = 12345
 
-def get_system_info():
+def puxar_informacao():
     info = {
-        'Quantidade de Processadores': psutil.cpu_count(logical=True),
-        'Memória RAM Livre': round(psutil.virtual_memory().free / (1024 ** 3), 2),
+        'Processadores': psutil.cpu_count(logical=True),
+        'Memória ram': round(psutil.virtual_memory().free / (1024 ** 3), 2),
         'Espaço em disco livre': round(psutil.disk_usage('/').free / (1024 ** 3), 2),
         'Endereço IP das Interfaces': [a['addr'] for i in netifaces.interfaces() if netifaces.AF_INET in netifaces.ifaddresses(i) for a in netifaces.ifaddresses(i)[netifaces.AF_INET]],
-        'Mostrar Interfaces Desativadas ': [i for i in netifaces.interfaces() if netifaces.AF_INET not in netifaces.ifaddresses(i)],
+        'Interfaces Desativadas ': [i for i in netifaces.interfaces() if netifaces.AF_INET not in netifaces.ifaddresses(i)],
         'Portas abertas': {'tcp': [c.laddr.port for c in psutil.net_connections(kind='inet') if c.status == 'LISTEN' and c.type == socket.SOCK_STREAM],
                        'udp': [c.laddr.port for c in psutil.net_connections(kind='inet') if c.status == 'LISTEN' and c.type == socket.SOCK_DGRAM]},
     }
@@ -25,7 +25,7 @@ def main():
             with socket.create_connection((HOST, PORT)) as sock:
                 with context.wrap_socket(sock, server_hostname=HOST) as ssock:
                     print("Conectado. Enviando dados...")
-                    info = get_system_info()
+                    info = puxar_informacao()
                     ssock.sendall(json.dumps(info).encode('utf-8'))
                     print("Dados enviados com sucesso.")
         except Exception as e:
